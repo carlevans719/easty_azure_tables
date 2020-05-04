@@ -1,17 +1,17 @@
-import azure from 'azure-storage'
+import azure, { ErrorOrResult, TableService } from 'azure-storage'
 import mapValues from 'lodash/mapValues'
-import uuid from 'uuid'
+import { v4 as uuid } from 'uuid'
 import validate from 'aproba'
 import { promisify } from 'util'
+
+import { AzureTableResponses, AzureDocument } from '../types/azureDocument'
 
 const tableService: azure.TableService = azure.createTableService(process.env.AZURE_STORAGE_ENDPOINT)
 const { entityGenerator: entGen, TableOperators, QueryComparisons } = azure.TableUtilities
 
 // promisifiy all the things
 const createTableIfNotExists = promisify(tableService.createTableIfNotExists).bind(tableService)
-const retrieveEntity = promisify(tableService.retrieveEntity).bind(tableService)
 const insertOrMergeEntity = promisify(tableService.insertOrMergeEntity).bind(tableService)
-const queryEntities = promisify(tableService.queryEntities).bind(tableService)
 
 /**
  * Table storage module
@@ -31,16 +31,20 @@ class Storage {
   /**
    * Returns a single document based on provided row key
    *
-   * @param {String} rowKey - the row key
-   * @param {String} partitionKey - the parition key
+   * @param {string} rowKey - the row key
+   * @param {string} partitionKey - the parition key
    * @return {Object} the document (or null)
    */
-  async findOne (rowKey: string, partitionKey: string): Promise<AzureDocument|unknown> {
+  async findOne<T = unknown> (rowKey: string, partitionKey: string): Promise<Record<string, T>|null> {
+    const retrieveEntity = promisify((tableKey: string, partitionKey: string, rowKey: string, callback: ErrorOrResult<AzureTableResponses<T>>) => {
+      return tableService.retrieveEntity(tableKey, partitionKey, rowKey, callback)
+    })
+
     validate('SS', [rowKey, partitionKey])
     try {
       await createTableIfNotExists(this.tableName)
-      const data: AzureTableResponses = await retrieveEntity(this.tableName, partitionKey, rowKey)
-      return mapValues(data, ({ _ }: AzureTableResponse) => _)
+      const data = await retrieveEntity(this.tableName, partitionKey, rowKey)
+      return mapValues(data, ({ _ }) => _)
     } catch (err) {
       console.error(err)
       // don't throw if we can't find anything,
@@ -53,17 +57,22 @@ class Storage {
    * Returns a selection of documents based on a query
    *
    * @param {Object} query - query parameters (e.g. { PartitionKey: '1234', FirstName: 'Gary' })
-   * @param {String} continueToken - if you received a 'next' token from the previous query
+   * @param {string} continueToken - if you received a 'next' token from the previous query
    * @return {Object} { items: (an array of results), next: a next token if more results are available }
    */
-  async find (query: {[x: string]: string}, continueToken: azure.TableService.TableContinuationToken): Promise<AzureDocuments> {
+  async find<T = unknown> (query: {[x: string]: string}, continueToken: azure.TableService.TableContinuationToken): Promise<{ items: Record<string, T>[]; next?: TableService.TableContinuationToken }> {
+    const queryEntities = promisify((tableName: string, query: azure.TableQuery, token: TableService.TableContinuationToken, callback: ErrorOrResult<TableService.QueryEntitiesResult<AzureTableResponses<T>>>) => {
+      return tableService.queryEntities(tableName, query, token, callback)
+    })
+
     validate('O|OS', [query, continueToken])
+
     await createTableIfNotExists(this.tableName)
     const tableQuery = this._buildQuery(query)
     const { entries, continuationToken } = await queryEntities(this.tableName, tableQuery, continueToken)
-    const items = entries.map((entry?: AzureTableResponses) =>
-      mapValues(entry, ({ _ }: AzureTableResponse) => _
-      ))
+    const items = entries.map((entry) =>
+      mapValues(entry, ({ _ }) => _)
+    )
     return { items, next: continuationToken }
   }
 
@@ -73,11 +82,12 @@ class Storage {
    * @param {Object} data - The data to insert
    * @return {Object} the inserted data
    */
-  async insert (data: AzureDocument): Promise<AzureDocument> {
+  async insert<T = string|number> (data: AzureDocument<T>): Promise<AzureDocument<T>> {
     validate('O', [data])
+
     await createTableIfNotExists(this.tableName)
     const existingData = data.RowKey ? await this.findOne(data.RowKey, data.PartitionKey) : {}
-    data.RowKey = data.RowKey || uuid.v4()
+    data.RowKey = data.RowKey || uuid()
     await insertOrMergeEntity(this.tableName, {
       ...Object.assign({}, existingData, data),
       PartitionKey: data.PartitionKey || entGen.String('default'),
