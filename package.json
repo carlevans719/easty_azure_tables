@@ -1,0 +1,35 @@
+{
+  "name": "easy_azure_tables",
+  "version": "1.0.0",
+  "description": "Simple, easy to use Azure Table Storage interface",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "npx typescript src/index.ts --outFile ./index.js",
+    "prepublish": "npm run build"
+  },
+  "keywords": [],
+  "author": "CEUK",
+  "license": "MIT",
+  "dependencies": {
+    "@types/lodash": "^4.14.150",
+    "@types/node": "^13.13.4",
+    "@types/uuid": "^7.0.3",
+    "aproba": "^2.0.0",
+    "azure-storage": "^2.10.3",
+    "lodash": "^4.17.15",
+    "uuid": "^8.0.0"
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^2.30.0",
+    "@typescript-eslint/parser": "^2.30.0",
+    "eslint": "^6.8.0",
+    "eslint-config-standard": "^14.1.1",
+    "eslint-plugin-import": "^2.20.2",
+    "eslint-plugin-node": "^11.1.0",
+    "eslint-plugin-promise": "^4.2.1",
+    "eslint-plugin-react": "^7.19.0",
+    "eslint-plugin-standard": "^4.0.1",
+    "typescript": "^3.8.3"
+  }
+}
