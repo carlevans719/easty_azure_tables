@@ -1,18 +1,18 @@
-interface AzureTableResponses {
+export interface AzureTableResponses {
   [x: string]: AzureTableResponse;
 }
 
-interface AzureTableResponse {
-  '_': any;
+export interface AzureTableResponse<T = any> {
+  '_': T;
 }
 
-interface AzureDocument {
+export interface AzureDocument {
   RowKey: string;
   PartitionKey: string;
   [x: string]: string|number;
 }
 
-interface AzureDocuments {
+export interface AzureDocuments {
   items: AzureDocument[];
   next: string|unknown;
 }

@@ -3,6 +3,7 @@ import mapValues from 'lodash/mapValues'
 import uuid from 'uuid'
 import validate from 'aproba'
 import { promisify } from 'util'
+import { AzureDocument, AzureDocuments, AzureTableResponse, AzureTableResponses } from './types/azureDocument'
 
 const tableService: azure.TableService = azure.createTableService(process.env.AZURE_STORAGE_ENDPOINT)
 const { entityGenerator: entGen, TableOperators, QueryComparisons } = azure.TableUtilities
