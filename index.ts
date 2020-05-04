@@ -3,6 +3,7 @@ import mapValues from 'lodash/mapValues'
 import { v4 as uuid } from 'uuid'
 import validate from 'aproba'
 import { promisify } from 'util'
+import { AzureDocument, AzureDocuments, AzureTableResponse, AzureTableResponses } from './types/azureDocument'
 
 import { AzureTableResponses, AzureDocument } from '../types/azureDocument'
 
